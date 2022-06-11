@@ -44,7 +44,7 @@ def createTeam(firstIndex, secondIndex, isRed,
 # Agents #
 ##########
 
-class DummyAgent(CaptureAgent):
+class BaseAgent(CaptureAgent):
     """
     A Dummy agent to serve as an example of the necessary agent structure.
     You should look at baselineTeam.py for more details about how to
@@ -70,7 +70,7 @@ class DummyAgent(CaptureAgent):
         on initialization time, please take a look at
         CaptureAgent.registerInitialState in captureAgents.py.
         '''
-        CaptureAgent.registerInitialState(self, gameState)
+        super().registerInitialState(gameState)
 
         '''
         Your initialization code goes here, if you need any.
@@ -88,3 +88,37 @@ class DummyAgent(CaptureAgent):
         '''
 
         return random.choice(actions)
+
+    
+    def evaluate(self, gameState, action):
+        features = self.getFeatures(gameState, action)
+        weights = self.getWeights(gameState, action)
+        return features * weights
+
+
+    def getFeatures(self, gameState, action):
+        raise NotImplementedError()
+
+
+    def getWeights(self, gameState, action):
+        raise NotImplementedError()
+
+
+class OffensiveAgent(BaseAgent):
+
+    def getFeatures(self, gameState, action):
+        pass
+
+
+    def getWeights(self, gameState, action):
+        pass
+
+
+class DefensiveAgent(BaseAgent):
+
+    def getFeatures(self, gameState, action):
+        pass
+
+
+    def getWeights(self, gameState, action):
+        pass
