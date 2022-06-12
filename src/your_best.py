@@ -105,40 +105,56 @@ class OffensiveAgent(BaseAgent):
 
     def getFeatures(self, gameState, action):
         successor = gameState.generateSuccessor(self.index, action)
-        foods = self.getFood(successor).asList()
         position = successor.getAgentState(self.index).getPosition()
 
-        nearestFoodDistance = min(self.getMazeDistance(position, food) for food in foods)
-
-        opponentStates = [gameState.getAgentState(opIdx) for opIdx in self.getOpponents(gameState)]
-        ghostPositions = [opState.getPosition() for opState in opponentStates if not opState.isPacman]
-        nearestGhostDistance = min(self.getMazeDistance(position, gPos) for gPos in ghostPositions)
-
-        foodCarrying = self.state.numCarrying
-        if foodCarrying > 0:
-            walls = successor.getWalls()
-            borderIdx = walls.width // 2 + (-1 if self.red else 0)
-            borderPositions = [(borderIdx, hIdx) for hIdx in range(walls.height) if not walls[borderIdx][hIdx]]
-            nearestHomeDistance = min(self.getMazeDistance(position, bPos) for bPos in borderPositions)
-            desireToReturn = foodCarrying ** 2 * nearestHomeDistance
-        else:
-            desireToReturn = 0
+        nearestFoodDistance = self.getNearestFoodDistance(successor, position)
+        foodsLeft = self.getFoodsLeft(successor)
+        nearestGhostDistance = self.getNearestGhostDistance(gameState, position)
+        desireToReturn = self.getDesireToReturn(successor, position)
 
         return util.Counter({
             'nearestFoodDistance': nearestFoodDistance,
+            'foodsLeft': foodsLeft,
             'ghostThreat': 1 / (nearestGhostDistance + EPSILON),
             'desireToReturn': desireToReturn,
-            'foodsLeft': len(foods),
         })
 
 
     def getWeights(self, gameState, action):
         return util.Counter({
             'nearestFoodDistance': -2,
+            'foodsLeft': -20,
             'ghostThreat': -19,
             'desireToReturn': -2,
-            'foodsLeft': -20,
         })
+
+
+    def getNearestFoodDistance(self, successor, position):
+        foods = self.getFood(successor).asList()
+        return min(self.getMazeDistance(position, food) for food in foods)
+
+
+    def getNearestGhostDistance(self, gameState, position):
+        opponentStates = [gameState.getAgentState(opIdx) for opIdx in self.getOpponents(gameState)]
+        ghostPositions = [opState.getPosition() for opState in opponentStates if not opState.isPacman]
+        return min(self.getMazeDistance(position, gPos) for gPos in ghostPositions)
+
+
+    def getDesireToReturn(self, successor, position):
+        foodCarrying = self.state.numCarrying
+        if foodCarrying == 0:
+            return 0
+        
+        walls = successor.getWalls()
+        borderIdx = walls.width // 2 + (-1 if self.red else 0)
+        borderPositions = [(borderIdx, hIdx) for hIdx in range(walls.height) if not walls[borderIdx][hIdx]]
+        nearestHomeDistance = min(self.getMazeDistance(position, bPos) for bPos in borderPositions)
+        return foodCarrying ** 2 * nearestHomeDistance
+
+
+    def getFoodsLeft(self, successor):
+        foods = self.getFood(successor).asList()
+        return len(foods)
 
 
 class DefensiveAgent(BaseAgent):
