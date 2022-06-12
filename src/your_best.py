@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -86,7 +86,7 @@ class BaseAgent(CaptureAgent):
         bestActions = [a for a, v in zip(actions, values) if v == maxValue]
         return random.choice(bestActions)
 
-    
+
     def evaluateAction(self, gameState, action):
         features = self.getFeatures(gameState, action)
         weights = self.getWeights(gameState, action)
@@ -144,12 +144,12 @@ class OffensiveAgent(BaseAgent):
         foodCarrying = self.state.numCarrying
         if foodCarrying == 0:
             return 0
-        
+
         walls = gameState.getWalls()
         borderIdx = walls.width // 2 + (-1 if self.red else 0)
         borderPositions = [(borderIdx, hIdx) for hIdx in range(walls.height) if not walls[borderIdx][hIdx]]
-        nearestHomeDistance = min(self.getMazeDistance(position, bPos) for bPos in borderPositions)
-        return foodCarrying ** 2 * nearestHomeDistance
+        nearestBorderDistance = min(self.getMazeDistance(position, bPos) for bPos in borderPositions)
+        return foodCarrying ** 2 * nearestBorderDistance
 
 
     def getFoodsLeft(self, gameState):
@@ -164,17 +164,23 @@ class DefensiveAgent(BaseAgent):
         position = successor.getAgentState(self.index).getPosition()
 
         opponentStates = [gameState.getAgentState(opIdx) for opIdx in self.getOpponents(gameState)]
-        enenmyPositions = [opState.getPosition() for opState in opponentStates if opState.isPacman]
+        invaderPositions = [opState.getPosition() for opState in opponentStates if opState.isPacman]
 
-        numInvaders = len(enenmyPositions)
+        numInvaders = len(invaderPositions)
         if numInvaders > 0:
-            invaderDistance = min(self.getMazeDistance(position, ePos) for ePos in enenmyPositions)
+            invaderDistance = min(self.getMazeDistance(position, ePos) for ePos in invaderPositions)
         else:
             invaderDistance = 0
+
+        walls = gameState.getWalls()
+        borderIdx = walls.width // 2 + (-1 if self.red else 0)
+        borderPositions = [(borderIdx, hIdx) for hIdx in range(walls.height) if not walls[borderIdx][hIdx]]
+        nearestBorderDistance = min(self.getMazeDistance(position, bPos) for bPos in borderPositions)
 
         return util.Counter({
             'invaders': numInvaders,
             'invaderDistance': invaderDistance,
+            'defendBorder': nearestBorderDistance,
         })
 
 
@@ -182,4 +188,5 @@ class DefensiveAgent(BaseAgent):
         return util.Counter({
             'invaders': -100,
             'invaderDistance': -10,
+            'defendBorder': -1,
         })
