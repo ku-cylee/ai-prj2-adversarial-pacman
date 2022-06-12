@@ -137,6 +137,8 @@ class OffensiveAgent(BaseAgent):
     def getNearestGhostDistance(self, gameState, position):
         opponentStates = [gameState.getAgentState(opIdx) for opIdx in self.getOpponents(gameState)]
         ghostPositions = [opState.getPosition() for opState in opponentStates if not opState.isPacman]
+        if not ghostPositions:
+            return 0
         return min(self.getMazeDistance(position, gPos) for gPos in ghostPositions)
 
 
@@ -180,9 +182,9 @@ class DefensiveAgent(BaseAgent):
 
 
     def getNearestInvaderDistance(self, invaderPositions, position):
-        if invaderPositions:
-            return min(self.getMazeDistance(position, ePos) for ePos in invaderPositions)
-        return 0
+        if not invaderPositions:
+            return 0
+        return min(self.getMazeDistance(position, ePos) for ePos in invaderPositions)
 
 
     def getDefendBorder(self, gameState, position):
