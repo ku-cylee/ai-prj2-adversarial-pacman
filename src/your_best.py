@@ -16,6 +16,8 @@ import random, time, util
 from game import Directions
 import game
 
+EPSILON = 1e-10
+
 #################
 # Team creation #
 #################
@@ -71,7 +73,6 @@ class BaseAgent(CaptureAgent):
         CaptureAgent.registerInitialState in captureAgents.py.
         '''
         super().registerInitialState(gameState)
-
         '''
         Your initialization code goes here, if you need any.
         '''
@@ -113,20 +114,30 @@ class OffensiveAgent(BaseAgent):
         ghostPositions = [opState.getPosition() for opState in opponentStates if not opState.isPacman]
         nearestGhostDistance = min(self.getMazeDistance(position, gPos) for gPos in ghostPositions)
 
+        foodCarrying = self.state.numCarrying
+        if foodCarrying > 0:
+            walls = successor.getWalls()
+            borderIdx = walls.width // 2 + (-1 if self.red else 0)
+            borderPositions = [(borderIdx, hIdx) for hIdx in range(walls.height) if not walls[borderIdx][hIdx]]
+            nearestHomeDistance = min(self.getMazeDistance(position, bPos) for bPos in borderPositions)
+            desireToReturn = foodCarrying ** 2 * nearestHomeDistance
+        else:
+            desireToReturn = 0
+
         return util.Counter({
             'nearestFoodDistance': nearestFoodDistance,
-            'nearestGhostDistance': nearestGhostDistance,
-            'foodsCarrying': self.state.numCarrying,
+            'ghostThreat': 1 / (nearestGhostDistance + EPSILON),
+            'desireToReturn': desireToReturn,
             'foodsLeft': len(foods),
         })
 
 
     def getWeights(self, gameState, action):
         return util.Counter({
-            'nearestFoodDistance': -4,
-            'nearestGhostDistance': 3,
-            'foodsCarrying': -10,
-            'foodsLeft': -50,
+            'nearestFoodDistance': -2,
+            'ghostThreat': -19,
+            'desireToReturn': -2,
+            'foodsLeft': -20,
         })
 
 
