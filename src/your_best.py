@@ -160,8 +160,26 @@ class OffensiveAgent(BaseAgent):
 class DefensiveAgent(BaseAgent):
 
     def getFeatures(self, gameState, action):
-        pass
+        successor = gameState.generateSuccessor(self.index, action)
+        position = successor.getAgentState(self.index).getPosition()
+
+        opponentStates = [gameState.getAgentState(opIdx) for opIdx in self.getOpponents(gameState)]
+        enenmyPositions = [opState.getPosition() for opState in opponentStates if opState.isPacman]
+
+        numInvaders = len(enenmyPositions)
+        if numInvaders > 0:
+            invaderDistance = min(self.getMazeDistance(position, ePos) for ePos in enenmyPositions)
+        else:
+            invaderDistance = 0
+
+        return util.Counter({
+            'invaders': numInvaders,
+            'invaderDistance': invaderDistance,
+        })
 
 
     def getWeights(self, gameState, action):
-        pass
+        return util.Counter({
+            'invaders': -100,
+            'invaderDistance': -10,
+        })
