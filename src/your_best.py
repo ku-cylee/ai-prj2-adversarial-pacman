@@ -78,6 +78,7 @@ class BaseAgent(CaptureAgent):
 
 
     def chooseAction(self, gameState):
+        self.state = gameState.getAgentState(self.index)
         actions = gameState.getLegalActions(self.index)
         values = [self.evaluateAction(gameState, action) for action in actions]
         maxValue = max(values)
@@ -102,24 +103,20 @@ class BaseAgent(CaptureAgent):
 class OffensiveAgent(BaseAgent):
 
     def getFeatures(self, gameState, action):
-        agentState = gameState.getAgentState(self.index)
         successor = gameState.generateSuccessor(self.index, action)
         foods = self.getFood(successor).asList()
         position = successor.getAgentState(self.index).getPosition()
-        opponents = self.getOpponents(gameState)
 
         nearestFoodDistance = min(self.getMazeDistance(position, food) for food in foods)
 
-        distancesToGhost = []
-        for opponentIdx in opponents:
-            opponentState = gameState.getAgentState(opponentIdx)
-            if opponentState.isPacman:
-                continue
-            distancesToGhost.append(self.getMazeDistance(position, opponentState.getPosition()))
+        opponentStates = [gameState.getAgentState(opIdx) for opIdx in self.getOpponents(gameState)]
+        ghostPositions = [opState.getPosition() for opState in opponentStates if not opState.isPacman]
+        nearestGhostDistance = min(self.getMazeDistance(position, gPos) for gPos in ghostPositions)
+
         return util.Counter({
             'nearestFoodDistance': nearestFoodDistance,
-            'nearestGhostDistance': min(distancesToGhost),
-            'foodsCarrying': agentState.numCarrying,
+            'nearestGhostDistance': nearestGhostDistance,
+            'foodsCarrying': self.state.numCarrying,
             'foodsLeft': len(foods),
         })
 
