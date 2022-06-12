@@ -21,7 +21,7 @@ import game
 #################
 
 def createTeam(firstIndex, secondIndex, isRed,
-               first = 'DummyAgent', second = 'DummyAgent'):
+               first='OffensiveAgent', second='DefensiveAgent'):
     """
     This function should return a list of two agents that will form the
     team, initialized using firstIndex and secondIndex as their agent
@@ -78,19 +78,14 @@ class BaseAgent(CaptureAgent):
 
 
     def chooseAction(self, gameState):
-        """
-        Picks among actions randomly.
-        """
         actions = gameState.getLegalActions(self.index)
-
-        '''
-        You should change this in your own agent.
-        '''
-
-        return random.choice(actions)
+        values = [self.evaluateAction(gameState, action) for action in actions]
+        maxValue = max(values)
+        bestActions = [a for a, v in zip(actions, values) if v == maxValue]
+        return random.choice(bestActions)
 
     
-    def evaluate(self, gameState, action):
+    def evaluateAction(self, gameState, action):
         features = self.getFeatures(gameState, action)
         weights = self.getWeights(gameState, action)
         return features * weights
@@ -107,11 +102,35 @@ class BaseAgent(CaptureAgent):
 class OffensiveAgent(BaseAgent):
 
     def getFeatures(self, gameState, action):
-        pass
+        agentState = gameState.getAgentState(self.index)
+        successor = gameState.generateSuccessor(self.index, action)
+        foods = self.getFood(successor).asList()
+        position = successor.getAgentState(self.index).getPosition()
+        opponents = self.getOpponents(gameState)
+
+        nearestFoodDistance = min(self.getMazeDistance(position, food) for food in foods)
+
+        distancesToGhost = []
+        for opponentIdx in opponents:
+            opponentState = gameState.getAgentState(opponentIdx)
+            if opponentState.isPacman:
+                continue
+            distancesToGhost.append(self.getMazeDistance(position, opponentState.getPosition()))
+        return util.Counter({
+            'nearestFoodDistance': nearestFoodDistance,
+            'nearestGhostDistance': min(distancesToGhost),
+            'foodsCarrying': agentState.numCarrying,
+            'foodsLeft': len(foods),
+        })
 
 
     def getWeights(self, gameState, action):
-        pass
+        return util.Counter({
+            'nearestFoodDistance': -4,
+            'nearestGhostDistance': 3,
+            'foodsCarrying': -10,
+            'foodsLeft': -50,
+        })
 
 
 class DefensiveAgent(BaseAgent):
