@@ -163,25 +163,33 @@ class DefensiveAgent(BaseAgent):
         successor = gameState.generateSuccessor(self.index, action)
         position = successor.getAgentState(self.index).getPosition()
 
+        invaderPositions = self.getInvaderPositions(successor)
+        invaderDistance = self.getNearestInvaderDistance(invaderPositions, position)
+        defendBorder = self.getDefendBorder(successor, position)
+
+        return util.Counter({
+            'invaders': len(invaderPositions),
+            'invaderDistance': invaderDistance,
+            'defendBorder': defendBorder,
+        })
+
+
+    def getInvaderPositions(self, gameState):
         opponentStates = [gameState.getAgentState(opIdx) for opIdx in self.getOpponents(gameState)]
-        invaderPositions = [opState.getPosition() for opState in opponentStates if opState.isPacman]
+        return [opState.getPosition() for opState in opponentStates if opState.isPacman]
 
-        numInvaders = len(invaderPositions)
-        if numInvaders > 0:
-            invaderDistance = min(self.getMazeDistance(position, ePos) for ePos in invaderPositions)
-        else:
-            invaderDistance = 0
 
+    def getNearestInvaderDistance(self, invaderPositions, position):
+        if invaderPositions:
+            return min(self.getMazeDistance(position, ePos) for ePos in invaderPositions)
+        return 0
+
+
+    def getDefendBorder(self, gameState, position):
         walls = gameState.getWalls()
         borderIdx = walls.width // 2 + (-1 if self.red else 0)
         borderPositions = [(borderIdx, hIdx) for hIdx in range(walls.height) if not walls[borderIdx][hIdx]]
-        nearestBorderDistance = min(self.getMazeDistance(position, bPos) for bPos in borderPositions)
-
-        return util.Counter({
-            'invaders': numInvaders,
-            'invaderDistance': invaderDistance,
-            'defendBorder': nearestBorderDistance,
-        })
+        return min(self.getMazeDistance(position, bPos) for bPos in borderPositions)
 
 
     def getWeights(self, gameState, action):
